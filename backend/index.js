@@ -15,10 +15,10 @@ const __dirname = path.resolve();
 
 // -------------------- MIDDLEWARE --------------------
 
-// Allow frontend access (adjust in production if needed)
+// Enable CORS for local dev and deployed frontend
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", process.env.FRONTEND_URL || "https://chatty-nqwa.onrender.com"],
     credentials: true,
   })
 );
@@ -33,19 +33,19 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
-// -------------------- PRODUCTION FRONTEND --------------------
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+// -------------------- SERVE FRONTEND --------------------
+const frontendPath = path.join(__dirname, "../frontend/dist");
+console.log("Serving frontend from:", frontendPath);
 
-  // Serve React app for any non-API route
-  app.get("*", (req, res) => {
-    // Ignore API routes
-    if (req.path.startsWith("/api")) {
-      return res.status(404).json({ error: "API route not found" });
-    }
-    res.sendFile(path.join(__dirname,"../frontend" , "dist" , "index.html"));
-  });
-}
+app.use(express.static(frontendPath));
+
+app.get("*", (req, res) => {
+  // Ignore API routes
+  if (req.path.startsWith("/api")) {
+    return res.status(404).json({ error: "API route not found" });
+  }
+  res.sendFile(path.join(frontendPath, "index.html"));
+});
 
 // -------------------- START SERVER --------------------
 connectDB().then(() => {
